@@ -1,0 +1,35 @@
+<article
+  class="card h-100 shadow-sm"
+  [ngClass]="{ 'border-primary border-2': seleccionado(), 'opacity-75': estadoStock() === 'agotado' }"
+>
+  <div class="card-body d-flex flex-column">
+    <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+      <span class="badge text-bg-light border">{{ producto().categoria | titlecase }}</span>
+      <span class="badge" [ngClass]="claseEstado()">{{ etiquetaEstado() }}</span>
+    </div>
+
+    <div class="display-5 text-center my-2" aria-hidden="true">{{ producto().icono }}</div>
+
+    <h2 class="card-title h6 mb-1">{{ producto().nombre }}</h2>
+    <p class="card-text small text-body-secondary flex-grow-1">{{ producto().descripcion }}</p>
+
+    <div class="d-flex justify-content-between align-items-end">
+      <span class="fs-5 fw-bold text-primary">{{ producto().precio | currency: 'BOB' : 'Bs ' : '1.2-2' }}</span>
+      <small class="text-body-secondary">
+        Stock: <strong>{{ producto().stock | number }}</strong> {{ producto().unidadMedida }}
+      </small>
+    </div>
+  </div>
+
+  <div class="card-footer bg-transparent border-0 pt-0 pb-3">
+    <button
+      type="button"
+      class="btn btn-sm w-100"
+      [ngClass]="seleccionado() ? 'btn-primary' : 'btn-outline-primary'"
+      [attr.aria-pressed]="seleccionado()"
+      (click)="alHacerClic()"
+    >
+      {{ seleccionado() ? 'Seleccionado' : 'Ver detalle' }}
+    </button>
+  </div>
+</article>

@@ -1,12 +1,12 @@
-import { Component, signal } from '@angular/core';
+import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { BarraNavegacion } from './componentes/barra-navegacion/barra-navegacion';
 
 @Component({
-  imports: [RouterOutlet],
   selector: 'app-root',
-  styleUrl: './app.css',
+  imports: [RouterOutlet, BarraNavegacion],
   templateUrl: './app.html',
 })
 export class App {
-  protected readonly title = signal('Tienda de Barrio');
+  protected readonly anioActual = new Date().getFullYear();
 }
