@@ -1,0 +1,236 @@
+<section>
+  <div class="mb-3">
+    <h1 class="h3 mb-0">Nuevo pedido</h1>
+    <p class="text-body-secondary mb-0">Elige los productos, revisa el total y confirma el pedido.</p>
+  </div>
+
+  @if (pedidoGuardado(); as pedido) {
+    <div class="alert alert-success d-flex flex-column flex-md-row gap-2 align-items-md-center" role="status">
+      <div class="flex-grow-1">
+        <strong>¡Pedido #{{ pedido.id }} registrado!</strong>
+        {{ pedido.items.length }} producto(s) para {{ pedido.nombreCliente }} por
+        <strong>{{ pedido.total | currency: 'BOB' : 'Bs ' : '1.2-2' }}</strong>. El stock ya fue descontado.
+      </div>
+      <div class="d-flex gap-2">
+        <a class="btn btn-sm btn-success" [routerLink]="['/pedidos', pedido.id]">Ver pedido</a>
+        <a class="btn btn-sm btn-outline-success" routerLink="/productos">Ir al catálogo</a>
+      </div>
+    </div>
+  }
+
+  @if (mensajeError(); as mensaje) {
+    <div class="alert alert-danger" role="alert">{{ mensaje }}</div>
+  }
+
+  @if (productosServicio.cargando() && productosServicio.productos().length === 0) {
+    <div class="d-flex justify-content-center align-items-center gap-2 py-5 text-body-secondary">
+      <div class="spinner-border" role="status" aria-hidden="true"></div>
+      <span>Cargando productos…</span>
+    </div>
+  } @else if (productosServicio.error(); as error) {
+    <div class="alert alert-danger" role="alert">{{ error }}</div>
+  } @else {
+    <form [formGroup]="formulario" (ngSubmit)="guardarPedido()" novalidate>
+      <div class="row g-4">
+        <!-- Columna izquierda: datos del cliente y líneas del pedido -->
+        <div class="col-12 col-lg-8">
+          <div class="card shadow-sm mb-4">
+            <div class="card-header bg-body fw-semibold">Datos del cliente</div>
+            <div class="card-body row g-3">
+              <div class="col-12">
+                <label for="nombreCliente" class="form-label">Nombre del cliente <span class="text-danger">*</span></label>
+                <input
+                  id="nombreCliente"
+                  type="text"
+                  class="form-control"
+                  formControlName="nombreCliente"
+                  placeholder="Ej. María Quispe"
+                  autocomplete="name"
+                  [ngClass]="{ 'is-invalid': mostrarError(formulario.controls.nombreCliente) }"
+                />
+                @if (mostrarError(formulario.controls.nombreCliente)) {
+                  <div class="invalid-feedback">
+                    @if (formulario.controls.nombreCliente.hasError('required')) {
+                      El nombre del cliente es obligatorio.
+                    } @else if (formulario.controls.nombreCliente.hasError('soloEspacios')) {
+                      El nombre no puede contener solo espacios.
+                    } @else if (formulario.controls.nombreCliente.hasError('minlength')) {
+                      El nombre debe tener al menos 3 caracteres.
+                    } @else if (formulario.controls.nombreCliente.hasError('maxlength')) {
+                      El nombre no puede superar los 60 caracteres.
+                    }
+                  </div>
+                }
+              </div>
+              <div class="col-12">
+                <label for="observaciones" class="form-label">Observaciones <span class="text-body-secondary">(opcional)</span></label>
+                <textarea
+                  id="observaciones"
+                  class="form-control"
+                  rows="2"
+                  formControlName="observaciones"
+                  placeholder="Ej. Entregar por la tarde"
+                  [ngClass]="{ 'is-invalid': mostrarError(formulario.controls.observaciones) }"
+                ></textarea>
+                <div class="form-text">{{ formulario.controls.observaciones.value.length }}/200 caracteres</div>
+                @if (mostrarError(formulario.controls.observaciones)) {
+                  <div class="invalid-feedback d-block">Las observaciones no pueden superar los 200 caracteres.</div>
+                }
+              </div>
+            </div>
+          </div>
+
+          <div class="card shadow-sm">
+            <div class="card-header bg-body d-flex justify-content-between align-items-center">
+              <span class="fw-semibold">Productos del pedido <span class="text-danger">*</span></span>
+              <span class="badge text-bg-secondary">{{ items.length }} / {{ maximoLineas }}</span>
+            </div>
+
+            <ul class="list-group list-group-flush" formArrayName="items">
+              @for (linea of items.controls; track linea; let indice = $index) {
+                @let productoLinea = buscarProducto(linea.controls.productoId.value);
+                <li class="list-group-item py-3" [formGroupName]="indice">
+                  <div class="row g-2 align-items-start">
+                    <div class="col-12 col-md-6">
+                      <label class="form-label small mb-1" [for]="'producto' + indice">Producto {{ indice + 1 }}</label>
+                      <select
+                        class="form-select"
+                        [id]="'producto' + indice"
+                        formControlName="productoId"
+                        [ngClass]="{ 'is-invalid': mostrarError(linea.controls.productoId) || (mostrarError(linea) && linea.hasError('productoAgotado')) }"
+                      >
+                        <option [ngValue]="null" disabled>Selecciona un producto…</option>
+                        @for (producto of productosServicio.productos(); track producto.id) {
+                          <option [ngValue]="producto.id" [disabled]="opcionDeshabilitada(producto, indice)">
+                            {{ producto.nombre }} — {{ producto.precio | currency: 'BOB' : 'Bs ' : '1.2-2' }}
+                            @if (producto.stock <= 0) { (agotado) }
+                          </option>
+                        }
+                      </select>
+                      @if (mostrarError(linea.controls.productoId)) {
+                        <div class="invalid-feedback">Selecciona un producto.</div>
+                      } @else if (linea.hasError('productoAgotado')) {
+                        <div class="invalid-feedback d-block">Este producto se agotó, elige otro.</div>
+                      }
+                    </div>
+
+                    <div class="col-6 col-md-3">
+                      <label class="form-label small mb-1" [for]="'cantidad' + indice">Cantidad</label>
+                      <input
+                        type="number"
+                        class="form-control"
+                        [id]="'cantidad' + indice"
+                        formControlName="cantidad"
+                        min="1"
+                        step="1"
+                        inputmode="numeric"
+                        [attr.max]="productoLinea?.stock"
+                        [ngClass]="{ 'is-invalid': mostrarError(linea.controls.cantidad) || linea.hasError('excedeStock') }"
+                      />
+                      @if (mostrarError(linea.controls.cantidad)) {
+                        <div class="invalid-feedback">
+                          @if (linea.controls.cantidad.hasError('required')) {
+                            Indica una cantidad.
+                          } @else {
+                            Debe ser un número entero mayor a 0.
+                          }
+                        </div>
+                      } @else if (linea.getError('excedeStock'); as errorStock) {
+                        <div class="invalid-feedback d-block">
+                          Solo hay {{ errorStock.disponible | number }} disponible(s).
+                        </div>
+                      } @else if (productoLinea) {
+                        <div class="form-text">Disponible: {{ productoLinea.stock | number }} {{ productoLinea.unidadMedida }}</div>
+                      }
+                    </div>
+
+                    <div class="col-6 col-md-3 d-flex flex-column align-items-end">
+                      <span class="form-label small mb-1">Subtotal</span>
+                      <div class="d-flex align-items-center gap-2">
+                        <span class="fw-semibold">
+                          {{ (productoLinea?.precio ?? 0) * (linea.controls.cantidad.value ?? 0) | currency: 'BOB' : 'Bs ' : '1.2-2' }}
+                        </span>
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline-danger"
+                          [disabled]="items.length === 1"
+                          [attr.aria-label]="'Quitar producto ' + (indice + 1)"
+                          (click)="quitarLinea(indice)"
+                        >
+                          Quitar
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </li>
+              }
+            </ul>
+
+            <div class="card-body border-top">
+              @if (items.hasError('productoRepetido')) {
+                <div class="alert alert-warning py-2 small" role="alert">
+                  Hay un producto repetido: ajusta la cantidad en una sola línea.
+                </div>
+              }
+              <button
+                type="button"
+                class="btn btn-outline-primary"
+                [disabled]="items.length >= maximoLineas"
+                (click)="agregarLinea()"
+              >
+                + Agregar otro producto
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Columna derecha: resumen y total -->
+        <div class="col-12 col-lg-4">
+          <div class="card shadow-sm sticky-lg-top">
+            <div class="card-header bg-body fw-semibold">Resumen del pedido</div>
+            @if (lineasResumen().length === 0) {
+              <div class="card-body text-body-secondary small">Aún no agregaste productos.</div>
+            } @else {
+              <ul class="list-group list-group-flush small">
+                @for (linea of lineasResumen(); track linea.producto.id) {
+                  <li class="list-group-item d-flex justify-content-between gap-2">
+                    <span>
+                      {{ linea.cantidad | number }} × {{ linea.producto.nombre }}
+                      @if (linea.cantidad > linea.producto.stock) {
+                        <span class="badge text-bg-danger ms-1">excede stock</span>
+                      }
+                    </span>
+                    <span class="text-nowrap">{{ linea.subtotal | currency: 'BOB' : 'Bs ' : '1.2-2' }}</span>
+                  </li>
+                }
+              </ul>
+            }
+            <div class="card-body border-top">
+              <div class="d-flex justify-content-between small text-body-secondary mb-1">
+                <span>Unidades</span>
+                <span>{{ cantidadUnidades() | number }}</span>
+              </div>
+              <div class="d-flex justify-content-between align-items-baseline mb-3">
+                <span class="fw-semibold">Total</span>
+                <span class="fs-4 fw-bold text-primary">{{ total() | currency: 'BOB' : 'Bs ' : '1.2-2' }}</span>
+              </div>
+              <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary" [disabled]="guardando()">
+                  @if (guardando()) {
+                    <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+                    Guardando…
+                  } @else {
+                    Confirmar pedido
+                  }
+                </button>
+                <button type="button" class="btn btn-outline-secondary" [disabled]="guardando()" (click)="reiniciarFormulario()">
+                  Vaciar formulario
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+  }
+</section>

@@ -18,4 +18,13 @@ export interface Pedido {
   estado: EstadoPedido;
   items: ItemPedido[];
   total: number;
+  observaciones?: string;
+}
+
+// Datos que envía el formulario: precios y total los calcula el servicio a partir de IndexedDB,
+// así el pedido no depende de valores que el usuario pudiera alterar en el navegador.
+export interface NuevoPedido {
+  nombreCliente: string;
+  observaciones?: string;
+  items: { productoId: number; cantidad: number }[];
 }
