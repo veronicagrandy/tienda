@@ -1,0 +1,18 @@
+// Tema de la Tienda de Barrio: Bootstrap compilado desde Sass con una paleta naranja,
+// cálida y cercana (el rojo se descartó por transmitir agresividad).
+// Se cambian solo las variables de Bootstrap; Bootstrap calcula el resto
+// (hover, foco, alertas, tablas, enlaces y el color del texto de cada botón).
+
+// Naranja tostado: cálido y con contraste 5.18:1 sobre blanco (WCAG AA), así el texto
+// de botones y menú sigue siendo blanco. Los naranjas más claros (#F97316) no llegan a 4.5:1.
+$primary: #c2410c;
+
+// "Peligro" se mantiene en el rojo por defecto de Bootstrap: con un primario naranja
+// ya se distingue bien de errores y acciones destructivas.
+
+// Enlaces del navbar naranja: blanco al 85% para que se lean bien (por defecto es 55%).
+$navbar-dark-color: rgba(#fff, 0.85);
+$navbar-dark-hover-color: #fff;
+$navbar-dark-active-color: #fff;
+
+@import 'bootstrap/scss/bootstrap';

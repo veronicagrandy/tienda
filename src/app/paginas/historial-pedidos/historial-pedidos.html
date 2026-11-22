@@ -7,7 +7,10 @@
     <a routerLink="/pedidos/nuevo" class="btn btn-primary">+ Nuevo pedido</a>
   </div>
 
-  <!-- Filtro por estado -->
+  <!-- Filtro por estado.
+       Sin seleccionar: botón neutro (outline-dark) y el color del estado va en el contador (text-bg-* elige
+       un texto legible; btn-outline-warning dejaba texto amarillo sobre blanco, ilegible).
+       Seleccionado: botón relleno con el color del estado y contador claro. -->
   <div class="d-flex flex-wrap gap-2 mb-3" role="group" aria-label="Filtrar pedidos por estado">
     <button
       type="button"
@@ -16,18 +19,26 @@
       [attr.aria-pressed]="estadoSeleccionado() === 'todos'"
       (click)="filtrarPorEstado('todos')"
     >
-      Todos <span class="badge text-bg-light ms-1">{{ conteoPorEstado().todos }}</span>
+      Todos
+      <span class="badge ms-1" [ngClass]="estadoSeleccionado() === 'todos' ? 'text-bg-light' : 'text-bg-dark'">
+        {{ conteoPorEstado().todos }}
+      </span>
     </button>
     @for (estado of estadosPedido; track estado) {
       <button
         type="button"
         class="btn btn-sm"
-        [ngClass]="(estadoSeleccionado() === estado ? 'btn-' : 'btn-outline-') + coloresEstadoPedido[estado]"
+        [ngClass]="estadoSeleccionado() === estado ? 'btn-' + coloresEstadoPedido[estado] : 'btn-outline-dark'"
         [attr.aria-pressed]="estadoSeleccionado() === estado"
         (click)="filtrarPorEstado(estado)"
       >
         {{ etiquetasEstadoPedido[estado] }}
-        <span class="badge text-bg-light ms-1">{{ conteoPorEstado()[estado] }}</span>
+        <span
+          class="badge ms-1"
+          [ngClass]="estadoSeleccionado() === estado ? 'text-bg-light' : 'text-bg-' + coloresEstadoPedido[estado]"
+        >
+          {{ conteoPorEstado()[estado] }}
+        </span>
       </button>
     }
   </div>
