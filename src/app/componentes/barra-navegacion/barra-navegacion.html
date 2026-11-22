@@ -11,8 +11,11 @@
       <ul class="navbar-nav ms-auto">
         @for (enlace of enlaces; track enlace.ruta) {
         <li class="nav-item">
-          <a class="nav-link" [routerLink]="enlace.ruta" routerLinkActive="active fw-semibold"
-            ariaCurrentWhenActive="page" [routerLinkActiveOptions]="enlace.opcionesActivo" (click)="cerrarMenu()">
+          <!-- routerLinkActive detecta la ruta activa; las clases se aplican con ngClass para sumar la regla del detalle -->
+          <a class="nav-link" [routerLink]="enlace.ruta" routerLinkActive #enlaceActivo="routerLinkActive"
+            [routerLinkActiveOptions]="enlace.opcionesActivo"
+            [ngClass]="{ 'active fw-semibold': estaActivo(enlace, enlaceActivo.isActive) }"
+            [attr.aria-current]="estaActivo(enlace, enlaceActivo.isActive) ? 'page' : null" (click)="cerrarMenu()">
             {{ enlace.etiqueta }}
           </a>
         </li>

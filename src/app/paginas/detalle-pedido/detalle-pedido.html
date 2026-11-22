@@ -1,0 +1,133 @@
+<section class="row justify-content-center">
+  <div class="col-12 col-lg-9 col-xl-8">
+    <nav class="mb-3" aria-label="breadcrumb">
+      <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a routerLink="/pedidos">Historial</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Pedido #{{ id() }}</li>
+      </ol>
+    </nav>
+
+    @if (cargando()) {
+      <div class="d-flex justify-content-center align-items-center gap-2 py-5 text-body-secondary">
+        <div class="spinner-border" role="status" aria-hidden="true"></div>
+        <span>Cargando pedido…</span>
+      </div>
+    } @else if (pedido(); as pedido) {
+      <!-- Consecuencia visible de la cancelación: unidades devueltas al stock -->
+      @if (stockRecuperado(); as recuperados) {
+        <div class="alert alert-success" role="status">
+          <h2 class="h6 alert-heading">Pedido cancelado: se devolvieron {{ unidades() | number }} unidad(es) al stock</h2>
+          <div class="table-responsive">
+            <table class="table table-sm table-borderless table-success mb-2 small align-middle">
+              <thead>
+                <tr>
+                  <th scope="col">Producto</th>
+                  <th scope="col" class="text-end">Devuelto</th>
+                  <th scope="col" class="text-end">Stock antes</th>
+                  <th scope="col" class="text-end">Stock ahora</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of recuperados; track item.productoId) {
+                  <tr>
+                    <td>{{ item.nombreProducto }}</td>
+                    <td class="text-end fw-semibold">+{{ item.cantidad | number }}</td>
+                    @if (item.stockActual !== null) {
+                      <td class="text-end">{{ item.stockAnterior | number }}</td>
+                      <td class="text-end fw-bold">{{ item.stockActual | number }}</td>
+                    } @else {
+                      <td colspan="2" class="text-end fst-italic">Producto ya no existe</td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <a routerLink="/productos" class="btn btn-sm btn-success">Ver catálogo actualizado</a>
+        </div>
+      }
+
+      @if (mensajeExito(); as mensaje) {
+        <div class="alert alert-success" role="status">{{ mensaje }}</div>
+      }
+      @if (mensajeError(); as mensaje) {
+        <div class="alert alert-danger" role="alert">{{ mensaje }}</div>
+      }
+
+      <!-- Confirmación previa a la cancelación -->
+      @if (confirmandoCancelacion() && esPendiente()) {
+        <div class="alert alert-warning" role="alertdialog" aria-labelledby="tituloConfirmacion">
+          <h2 id="tituloConfirmacion" class="h6 alert-heading">¿Cancelar el pedido #{{ pedido.id }}?</h2>
+          <p class="mb-2 small">
+            Se devolverán {{ unidades() | number }} unidad(es) al stock de la tienda. Esta acción no se puede deshacer.
+          </p>
+          <div class="d-flex flex-wrap gap-2">
+            <button
+              type="button"
+              class="btn btn-sm btn-danger"
+              [disabled]="accionEnCurso() !== null"
+              (click)="confirmarCancelacion()"
+            >
+              @if (accionEnCurso() === 'cancelar') {
+                <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+              }
+              Sí, cancelar pedido
+            </button>
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-secondary"
+              [disabled]="accionEnCurso() !== null"
+              (click)="descartarCancelacion()"
+            >
+              No, mantenerlo
+            </button>
+          </div>
+        </div>
+      }
+
+      <app-resumen-pedido [pedido]="pedido">
+        <a class="btn btn-sm btn-outline-secondary me-auto" routerLink="/pedidos" [queryParams]="{ seleccionado: pedido.id }">
+          ← Volver al historial
+        </a>
+        @if (esPendiente()) {
+          <button
+            type="button"
+            class="btn btn-sm btn-outline-danger"
+            [disabled]="accionEnCurso() !== null || confirmandoCancelacion()"
+            (click)="pedirConfirmacion()"
+          >
+            Cancelar pedido
+          </button>
+          <button
+            type="button"
+            class="btn btn-sm btn-success"
+            [disabled]="accionEnCurso() !== null || confirmandoCancelacion()"
+            (click)="marcarComoEntregado()"
+          >
+            @if (accionEnCurso() === 'entregar') {
+              <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+            }
+            Marcar como entregado
+          </button>
+        } @else {
+          <span class="small text-body-secondary align-self-center">
+            Este pedido está cerrado y no admite cambios.
+          </span>
+        }
+      </app-resumen-pedido>
+    } @else if (mensajeError(); as mensaje) {
+      <div class="alert alert-danger" role="alert">{{ mensaje }}</div>
+      <a routerLink="/pedidos" class="btn btn-outline-secondary">← Volver al historial</a>
+    } @else {
+      <!-- El id no existe (o no es válido) -->
+      <div class="alert alert-warning text-center py-5" role="alert">
+        <h1 class="h4 alert-heading">Pedido no encontrado</h1>
+        <p>No existe ningún pedido con el número <strong>#{{ id() }}</strong>. Puede que el enlace sea incorrecto.</p>
+        <div class="d-flex flex-wrap justify-content-center gap-2">
+          <a routerLink="/pedidos" class="btn btn-warning">← Volver al historial</a>
+          <a routerLink="/pedidos/nuevo" class="btn btn-outline-secondary">Registrar un pedido</a>
+        </div>
+      </div>
+    }
+  </div>
+</section>
