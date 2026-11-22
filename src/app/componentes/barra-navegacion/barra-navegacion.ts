@@ -1,13 +1,21 @@
 import { NgClass } from '@angular/common';
 import { Component, signal } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { IsActiveMatchOptions, RouterLink, RouterLinkActive } from '@angular/router';
 
 interface EnlaceNavegacion {
   ruta: string;
   etiqueta: string;
-  // `exacta` evita que /pedidos quede activo al visitar /pedidos/nuevo.
-  exacta: boolean;
+  opcionesActivo: IsActiveMatchOptions;
 }
+
+// Ruta exacta (así /pedidos no queda activo en /pedidos/nuevo), pero ignorando los
+// query params: /pedidos?estado=entregado debe seguir resaltando "Historial".
+const rutaExacta: IsActiveMatchOptions = {
+  paths: 'exact',
+  queryParams: 'ignored',
+  matrixParams: 'ignored',
+  fragment: 'ignored',
+};
 
 @Component({
   selector: 'app-barra-navegacion',
@@ -20,9 +28,9 @@ export class BarraNavegacion {
   protected readonly menuAbierto = signal(false);
 
   protected readonly enlaces: EnlaceNavegacion[] = [
-    { ruta: '/productos', etiqueta: 'Catálogo', exacta: true },
-    { ruta: '/pedidos/nuevo', etiqueta: 'Nuevo pedido', exacta: true },
-    { ruta: '/pedidos', etiqueta: 'Historial', exacta: true },
+    { ruta: '/productos', etiqueta: 'Catálogo', opcionesActivo: rutaExacta },
+    { ruta: '/pedidos/nuevo', etiqueta: 'Nuevo pedido', opcionesActivo: rutaExacta },
+    { ruta: '/pedidos', etiqueta: 'Historial', opcionesActivo: rutaExacta },
   ];
 
   protected alternarMenu(): void {

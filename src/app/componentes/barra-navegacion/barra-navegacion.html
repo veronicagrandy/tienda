@@ -12,7 +12,7 @@
         @for (enlace of enlaces; track enlace.ruta) {
         <li class="nav-item">
           <a class="nav-link" [routerLink]="enlace.ruta" routerLinkActive="active fw-semibold"
-            ariaCurrentWhenActive="page" [routerLinkActiveOptions]="{ exact: enlace.exacta }" (click)="cerrarMenu()">
+            ariaCurrentWhenActive="page" [routerLinkActiveOptions]="enlace.opcionesActivo" (click)="cerrarMenu()">
             {{ enlace.etiqueta }}
           </a>
         </li>

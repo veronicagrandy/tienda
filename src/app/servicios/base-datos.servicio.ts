@@ -1,9 +1,11 @@
 import { isPlatformBrowser } from '@angular/common';
 import { Injectable, PLATFORM_ID, inject } from '@angular/core';
+import { pedidosIniciales } from '../datos/pedidos-iniciales';
 import { productosIniciales } from '../datos/productos-iniciales';
 
 const nombreBaseDatos = 'tiendaBarrioDb';
-const versionBaseDatos = 1;
+// v1: productos y pedidos + semilla de productos. v2: pedidos de ejemplo para el historial.
+const versionBaseDatos = 2;
 
 export const almacenProductos = 'productos';
 export const almacenPedidos = 'pedidos';
@@ -94,8 +96,23 @@ export class BaseDatosServicio {
 
           productosIniciales.forEach((producto) => productos.add(producto));
         }
+        // Migración incremental: quien ya tenía la v1 conserva sus datos y solo recibe lo nuevo.
+        if (evento.oldVersion < 2) {
+          const pedidos = solicitud.transaction!.objectStore(almacenPedidos);
+          pedidosIniciales.forEach((pedido) => pedidos.add(pedido));
+        }
       };
-      solicitud.onsuccess = () => resolve(solicitud.result);
+      // Una pestaña abierta con la versión anterior impide migrar hasta que se cierre.
+      solicitud.onblocked = () => console.warn('Cierra las otras pestañas de la tienda para actualizar la base de datos.');
+      solicitud.onsuccess = () => {
+        const baseDatos = solicitud.result;
+        // Si otra pestaña abre una versión más nueva, se cierra esta conexión para no bloquearla.
+        baseDatos.onversionchange = () => {
+          baseDatos.close();
+          this.conexion = null;
+        };
+        resolve(baseDatos);
+      };
       solicitud.onerror = () => {
         this.conexion = null; // permite reintentar
         reject(solicitud.error);

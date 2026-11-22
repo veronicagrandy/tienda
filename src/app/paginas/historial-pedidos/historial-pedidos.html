@@ -1,0 +1,143 @@
+<section>
+  <div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+    <div>
+      <h1 class="h3 mb-0">Historial de pedidos</h1>
+      <p class="text-body-secondary mb-0">Consulta los pedidos guardados y elige uno para ver su detalle.</p>
+    </div>
+    <a routerLink="/pedidos/nuevo" class="btn btn-primary">+ Nuevo pedido</a>
+  </div>
+
+  <!-- Filtro por estado -->
+  <div class="d-flex flex-wrap gap-2 mb-3" role="group" aria-label="Filtrar pedidos por estado">
+    <button
+      type="button"
+      class="btn btn-sm"
+      [ngClass]="estadoSeleccionado() === 'todos' ? 'btn-dark' : 'btn-outline-dark'"
+      [attr.aria-pressed]="estadoSeleccionado() === 'todos'"
+      (click)="filtrarPorEstado('todos')"
+    >
+      Todos <span class="badge text-bg-light ms-1">{{ conteoPorEstado().todos }}</span>
+    </button>
+    @for (estado of estadosPedido; track estado) {
+      <button
+        type="button"
+        class="btn btn-sm"
+        [ngClass]="(estadoSeleccionado() === estado ? 'btn-' : 'btn-outline-') + coloresEstadoPedido[estado]"
+        [attr.aria-pressed]="estadoSeleccionado() === estado"
+        (click)="filtrarPorEstado(estado)"
+      >
+        {{ etiquetasEstadoPedido[estado] }}
+        <span class="badge text-bg-light ms-1">{{ conteoPorEstado()[estado] }}</span>
+      </button>
+    }
+  </div>
+
+  @if (pedidosServicio.cargando() && pedidosServicio.pedidos().length === 0) {
+    <div class="d-flex justify-content-center align-items-center gap-2 py-5 text-body-secondary">
+      <div class="spinner-border" role="status" aria-hidden="true"></div>
+      <span>Cargando pedidos…</span>
+    </div>
+  } @else if (pedidosServicio.error(); as error) {
+    <div class="alert alert-danger d-flex justify-content-between align-items-center" role="alert">
+      <span>{{ error }}</span>
+      <button type="button" class="btn btn-sm btn-outline-danger" (click)="pedidosServicio.cargarPedidos()">
+        Reintentar
+      </button>
+    </div>
+  } @else if (pedidosServicio.pedidos().length === 0) {
+    <div class="alert alert-info text-center py-4" role="status">
+      <p class="mb-2">Todavía no hay pedidos registrados.</p>
+      <a routerLink="/pedidos/nuevo" class="btn btn-sm btn-info">Registrar el primero</a>
+    </div>
+  } @else {
+    @if (seleccionInexistente()) {
+      <div class="alert alert-warning d-flex justify-content-between align-items-center" role="alert">
+        <span>El pedido #{{ seleccionado() }} no existe.</span>
+        <button type="button" class="btn btn-sm btn-outline-warning" (click)="cerrarDetalle()">Cerrar</button>
+      </div>
+    }
+
+    <div class="row g-4">
+      <!-- Listado -->
+      <div class="col-12" [ngClass]="{ 'col-lg-7': pedidoSeleccionado() }">
+        <p class="text-body-secondary small mb-2" aria-live="polite">
+          Mostrando {{ pedidosFiltrados().length | number }} de {{ pedidosServicio.pedidos().length | number }} pedidos
+        </p>
+
+        @if (pedidosFiltrados().length === 0) {
+          <div class="alert alert-warning text-center" role="status">
+            <p class="mb-2">
+              No hay pedidos con estado <strong>{{ etiquetaFiltroActual() }}</strong>.
+            </p>
+            <button type="button" class="btn btn-sm btn-warning" (click)="filtrarPorEstado('todos')">Ver todos</button>
+          </div>
+        } @else {
+          <div class="card shadow-sm">
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th scope="col" class="ps-3">#</th>
+                    <th scope="col">Fecha</th>
+                    <th scope="col">Cliente</th>
+                    <th scope="col" class="text-end d-none d-md-table-cell">Unidades</th>
+                    <th scope="col" class="text-end">Total</th>
+                    <th scope="col" class="d-none d-sm-table-cell">Estado</th>
+                    <th scope="col" class="pe-3 d-none d-sm-table-cell"><span class="visually-hidden">Acciones</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (pedido of pedidosFiltrados(); track pedido.id) {
+                    <tr
+                      role="button"
+                      [ngClass]="{ 'table-primary': pedido.id === idSeleccionado() }"
+                      (click)="alSeleccionarPedido(pedido)"
+                    >
+                      <td class="ps-3 fw-semibold">{{ pedido.id }}</td>
+                      <td class="text-nowrap small">
+                        {{ pedido.fecha | date: 'dd/MM/yyyy' }}
+                        <span class="d-block text-body-secondary">{{ pedido.fecha | date: 'HH:mm' }}</span>
+                      </td>
+                      <td>
+                        {{ pedido.nombreCliente }}
+                        <!-- En móvil el estado va bajo el nombre para que la tabla no desborde -->
+                        <span class="d-block d-sm-none mt-1"><app-insignia-estado-pedido [estado]="pedido.estado" /></span>
+                      </td>
+                      <td class="text-end d-none d-md-table-cell">{{ contarUnidades(pedido) | number }}</td>
+                      <td class="text-end text-nowrap">{{ pedido.total | currency: 'BOB' : 'Bs ' : '1.2-2' }}</td>
+                      <td class="d-none d-sm-table-cell"><app-insignia-estado-pedido [estado]="pedido.estado" /></td>
+                      <td class="pe-3 text-end d-none d-sm-table-cell">
+                        <!-- El botón da acceso por teclado; stopPropagation evita el doble clic de la fila -->
+                        <button
+                          type="button"
+                          class="btn btn-sm"
+                          [ngClass]="pedido.id === idSeleccionado() ? 'btn-primary' : 'btn-outline-primary'"
+                          [attr.aria-pressed]="pedido.id === idSeleccionado()"
+                          (click)="$event.stopPropagation(); alSeleccionarPedido(pedido)"
+                        >
+                          {{ pedido.id === idSeleccionado() ? 'Ocultar' : 'Ver' }}
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Detalle del pedido seleccionado: arriba en móvil, a la derecha en escritorio -->
+      @if (pedidoSeleccionado(); as pedido) {
+        <div class="col-12 col-lg-5 order-first order-lg-last">
+          <div class="sticky-lg-top">
+            <app-resumen-pedido [pedido]="pedido">
+              <button type="button" class="btn btn-sm btn-outline-secondary" (click)="cerrarDetalle()">Cerrar</button>
+              <a class="btn btn-sm btn-primary" [routerLink]="['/pedidos', pedido.id]">Abrir pedido</a>
+            </app-resumen-pedido>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</section>

@@ -2,7 +2,7 @@ import { Routes } from '@angular/router';
 
 const sufijoTitulo = ' | Tienda de Barrio';
 
-// Rutas de las 4 pantallas. Las fases 3-4 usan un marcador temporal hasta implementarse.
+// Rutas de las 4 pantallas. La fase 4 usan un marcador temporal hasta implementarse.
 // Todas se cargan de forma diferida (lazy) para mantener liviano el bundle inicial.
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'productos' },
@@ -20,8 +20,7 @@ export const routes: Routes = [
   {
     path: 'pedidos',
     title: 'Historial de pedidos' + sufijoTitulo,
-    loadComponent: () => import('./paginas/en-construccion/en-construccion').then((m) => m.EnConstruccion),
-    data: { titulo: 'Historial de pedidos', descripcion: 'Aquí verás los pedidos guardados y su estado (Funcionalidad 3).' },
+    loadComponent: () => import('./paginas/historial-pedidos/historial-pedidos').then((m) => m.HistorialPedidos),
   },
   {
     path: 'pedidos/:id',

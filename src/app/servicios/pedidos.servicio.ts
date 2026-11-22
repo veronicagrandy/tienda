@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { ItemPedido, NuevoPedido, Pedido } from '../modelos/pedido';
 import { Producto } from '../modelos/producto';
 import { BaseDatosServicio, almacenPedidos, almacenProductos } from './base-datos.servicio';
@@ -11,6 +11,34 @@ export class ErrorPedido extends Error {}
 export class PedidosServicio {
   private readonly baseDatos = inject(BaseDatosServicio);
   private readonly productosServicio = inject(ProductosServicio);
+
+  private readonly pedidosInterno = signal<Pedido[]>([]);
+  private readonly cargandoInterno = signal(false);
+  private readonly errorInterno = signal<string | null>(null);
+
+  /** Pedidos ordenados del más reciente al más antiguo. */
+  readonly pedidos = this.pedidosInterno.asReadonly();
+  readonly cargando = this.cargandoInterno.asReadonly();
+  readonly error = this.errorInterno.asReadonly();
+
+  async cargarPedidos(): Promise<void> {
+    this.cargandoInterno.set(true);
+    this.errorInterno.set(null);
+    try {
+      const pedidos = await this.baseDatos.obtenerTodos<Pedido>(almacenPedidos);
+      // Las fechas ISO se ordenan correctamente como texto.
+      this.pedidosInterno.set(pedidos.sort((a, b) => b.fecha.localeCompare(a.fecha)));
+    } catch (error) {
+      console.error(error);
+      this.errorInterno.set('No se pudo cargar el historial de pedidos.');
+    } finally {
+      this.cargandoInterno.set(false);
+    }
+  }
+
+  async obtenerPedidoPorId(id: number): Promise<Pedido | undefined> {
+    return this.baseDatos.obtenerPorId<Pedido>(almacenPedidos, id);
+  }
 
   /**
    * Registra un pedido y descuenta el stock en UNA sola transacción:
@@ -94,8 +122,9 @@ export class PedidosServicio {
       throw new ErrorPedido('No se pudo guardar el pedido. Inténtalo de nuevo.');
     }
 
-    // El stock cambió en IndexedDB: se refresca el catálogo en memoria.
+    // El stock cambió en IndexedDB: se refresca el catálogo y se agrega el pedido al historial en memoria.
     await this.productosServicio.cargarProductos();
+    this.pedidosInterno.update((pedidos) => [pedidoGuardado!, ...pedidos]);
     return pedidoGuardado!;
   }
 }

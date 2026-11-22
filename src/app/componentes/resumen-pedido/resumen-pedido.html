@@ -1,0 +1,66 @@
+<article class="card shadow-sm">
+  <div class="card-header bg-body d-flex justify-content-between align-items-center gap-2">
+    <h2 class="h5 mb-0">Pedido #{{ pedido().id }}</h2>
+    <app-insignia-estado-pedido [estado]="pedido().estado" />
+  </div>
+
+  <div class="card-body">
+    <dl class="row small mb-0">
+      <dt class="col-5 col-sm-4 fw-normal text-body-secondary">Cliente</dt>
+      <dd class="col-7 col-sm-8 fw-semibold">{{ pedido().nombreCliente }}</dd>
+
+      <dt class="col-5 col-sm-4 fw-normal text-body-secondary">Fecha</dt>
+      <dd class="col-7 col-sm-8">{{ pedido().fecha | date: "EEEE d 'de' MMMM, y · HH:mm" }}</dd>
+
+      @if (pedido().fechaCancelacion; as fechaCancelacion) {
+        <dt class="col-5 col-sm-4 fw-normal text-body-secondary">Cancelado el</dt>
+        <dd class="col-7 col-sm-8">{{ fechaCancelacion | date: 'dd/MM/yyyy HH:mm' }}</dd>
+      }
+
+      @if (pedido().observaciones; as observaciones) {
+        <dt class="col-5 col-sm-4 fw-normal text-body-secondary">Observaciones</dt>
+        <dd class="col-7 col-sm-8 fst-italic">{{ observaciones }}</dd>
+      }
+    </dl>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-sm align-middle mb-0 small">
+      <thead class="table-light">
+        <tr>
+          <th scope="col" class="ps-3">Producto</th>
+          <th scope="col" class="text-end">Cant.</th>
+          <th scope="col" class="text-end">P. unit.</th>
+          <th scope="col" class="text-end pe-3">Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of pedido().items; track item.productoId) {
+          <tr>
+            <td class="ps-3">{{ item.nombreProducto }}</td>
+            <td class="text-end">{{ item.cantidad | number }}</td>
+            <td class="text-end text-nowrap">{{ item.precioUnitario | currency: 'BOB' : 'Bs ' : '1.2-2' }}</td>
+            <td class="text-end text-nowrap pe-3">
+              {{ item.precioUnitario * item.cantidad | currency: 'BOB' : 'Bs ' : '1.2-2' }}
+            </td>
+          </tr>
+        }
+      </tbody>
+      <tfoot>
+        <tr class="fw-bold">
+          <td class="ps-3">Total</td>
+          <td class="text-end">{{ unidades() | number }}</td>
+          <td></td>
+          <td class="text-end text-nowrap pe-3 text-primary">
+            {{ pedido().total | currency: 'BOB' : 'Bs ' : '1.2-2' }}
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <!-- Acciones que define el componente padre -->
+  <div class="card-footer bg-body d-flex flex-wrap gap-2 justify-content-end">
+    <ng-content />
+  </div>
+</article>

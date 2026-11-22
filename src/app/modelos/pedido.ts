@@ -1,6 +1,20 @@
 // Modelos preparados para las funcionalidades 2, 3 y 4 (registro, historial y detalle de pedidos).
 
-export type EstadoPedido = 'pendiente' | 'entregado' | 'cancelado';
+export const estadosPedido = ['pendiente', 'entregado', 'cancelado'] as const;
+export type EstadoPedido = (typeof estadosPedido)[number];
+
+export const etiquetasEstadoPedido: Record<EstadoPedido, string> = {
+  pendiente: 'Pendiente',
+  entregado: 'Entregado',
+  cancelado: 'Cancelado',
+};
+
+// Clases de Bootstrap por estado, compartidas por el badge y los filtros.
+export const coloresEstadoPedido: Record<EstadoPedido, string> = {
+  pendiente: 'warning',
+  entregado: 'success',
+  cancelado: 'secondary',
+};
 
 export interface ItemPedido {
   productoId: number;
@@ -19,6 +33,11 @@ export interface Pedido {
   items: ItemPedido[];
   total: number;
   observaciones?: string;
+  fechaCancelacion?: string; // ISO 8601, se registrará en la fase 4
+}
+
+export function contarUnidades(pedido: Pedido): number {
+  return pedido.items.reduce((suma, item) => suma + item.cantidad, 0);
 }
 
 // Datos que envía el formulario: precios y total los calcula el servicio a partir de IndexedDB,
